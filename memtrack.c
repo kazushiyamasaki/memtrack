@@ -1,7 +1,7 @@
 /*
  * memtrack.c -- implementation part of a library to assist with memory-related
  *               debugging
- * version 0.9.0, May 28, 2025
+ * version 0.9.1, May 29, 2025
  *
  * License: zlib License
  *
@@ -48,14 +48,14 @@ typedef struct {
 	size_t size;
 #ifdef DEBUG
 	const char* alloc_file;
-	unsigned int alloc_line;
 	const char* last_realloc_file;
-	int last_realloc_line;
-	bool is_freed;
 	const char* free_file;
+	unsigned int alloc_line;
+	int last_realloc_line;
 	unsigned int free_line;
+	bool is_freed;
 #endif
-} MemTrackEntry;
+} MemTrackEntry;  /* パディングの削減のため順序がわかりにくくなっているので注意 */
 
 
 static HashTable* memtrack_entries = NULL;
