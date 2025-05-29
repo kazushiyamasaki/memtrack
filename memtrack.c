@@ -291,6 +291,7 @@ void memtrack_free_without_lock (void* ptr, const char* file, unsigned int line)
 
 void* memtrack_realloc_without_lock (void* ptr, size_t size, const char* file, unsigned int line) {
 	if (size == 0) {
+		fprintf(stderr, "Undefined behavior, do not use anymore. The memory block will be freed and NULL will be returned.\nFile: %s   Line: %u\n", file, line);
 		memtrack_free_without_lock(ptr, file, line);
 		return NULL;
 	}
@@ -417,6 +418,7 @@ void* memtrack_calloc_array (size_t count, size_t size, const char* file, unsign
 
 void* memtrack_realloc_array_without_lock (void* ptr, size_t count, size_t size, const char* file, unsigned int line) {
 	if (size == 0) {
+		fprintf(stderr, "Undefined behavior, do not use anymore. The memory block will be freed and NULL will be returned.\nFile: %s   Line: %u\n", file, line);
 		memtrack_free_without_lock(ptr, file, line);
 		return NULL;
 	} else if (count > (SIZE_MAX / size)) {
