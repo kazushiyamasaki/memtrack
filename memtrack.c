@@ -76,6 +76,8 @@ static HashTable* memtrack_entries = NULL;
 
 
 #if defined (_POSIX_THREADS) && (_POSIX_THREADS > 0)
+	#define PTHREAD_AVAILABLE
+
 	#include <pthread.h>
 	static pthread_mutex_t memtrack_lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 #elif defined (_WIN32)
@@ -92,6 +94,8 @@ static HashTable* memtrack_entries = NULL;
 		return true;
 	}
 #elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)
+	#define STDSTOMIC_AVAILABLE
+
 	#include <stdatomic.h>
 	static atomic_flag memtrack_lock_flag = ATOMIC_FLAG_INIT;
 #else
@@ -100,13 +104,13 @@ static HashTable* memtrack_entries = NULL;
 
 
 void memtrack_lock (void) {
-#if defined (_POSIX_THREADS) && (_POSIX_THREADS > 0)
+#ifdef PTHREAD_AVAILABLE
 	pthread_mutex_lock(&memtrack_lock_mutex);
 #elif defined (_WIN32)
 	InitOnceExecuteOnce(&cs_init_once, InitCriticalSection, NULL, NULL);
 
 	EnterCriticalSection(&memtrack_lock_cs);
-#elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)
+#elif defined (STDSTOMIC_AVAILABLE)
 	while (atomic_flag_test_and_set_explicit(&memtrack_lock_flag, memory_order_acquire)) {
 		SPIN_WAIT();
 	}
@@ -120,11 +124,11 @@ void memtrack_lock (void) {
 
 
 void memtrack_unlock (void) {
-#if defined (_POSIX_THREADS) && (_POSIX_THREADS > 0)
+#ifdef PTHREAD_AVAILABLE
 	pthread_mutex_unlock(&memtrack_lock_mutex);
 #elif defined (_WIN32)
 	LeaveCriticalSection(&memtrack_lock_cs);
-#elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)
+#elif defined (STDSTOMIC_AVAILABLE)
 	atomic_flag_clear_explicit(&memtrack_lock_flag, memory_order_release);
 #else
 	memtrack_busy = false;
@@ -545,7 +549,7 @@ static void quit (void) {
 	ht_destroy(memtrack_entries);
 	memtrack_entries = NULL;
 
-#if defined (_POSIX_THREADS) && (_POSIX_THREADS > 0)
+#ifdef PTHREAD_AVAILABLE
 	pthread_mutex_destroy(&memtrack_lock_mutex);
 #elif defined (_WIN32)
 	DeleteCriticalSection(&memtrack_lock_cs);
