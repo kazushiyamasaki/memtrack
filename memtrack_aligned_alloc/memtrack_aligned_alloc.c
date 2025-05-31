@@ -1,7 +1,7 @@
 /*
  * memtrack_aligned_alloc.c -- implementation part of the library that adds
  *                             aligned_alloc to the management target of memtrack.h
- * version 0.9.2, May 31, 2025
+ * version 0.9.3, June 1, 2025
  *
  * License: zlib License
  *
@@ -42,6 +42,15 @@
 #endif
 
 
+#ifdef __GNUC__
+	#define LIKELY(x)   __builtin_expect(!!(x), 1)
+	#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+	#define LIKELY(x)   (x)
+	#define UNLIKELY(x) (x)
+#endif
+
+
 static void* memtrack_aligned_alloc_without_entry_add (size_t alignment, size_t size, const char* file, unsigned int line) {
 	if (!ht_is_power_of_two(alignment)) {
 		fprintf(stderr, "Alignment must be a power of 2.\nFile: %s   Line: %u\n", file, line);
@@ -69,7 +78,7 @@ static void* memtrack_aligned_alloc_without_entry_add (size_t alignment, size_t 
 	}
 
 	void* ptr = aligned_alloc(alignment, size);
-	if (ptr == NULL)
+	if (UNLIKELY(ptr == NULL))
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %u\n", file, line);
 	return ptr;
 }

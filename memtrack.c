@@ -1,7 +1,7 @@
 /*
  * memtrack.c -- implementation part of a library to assist with memory-related
  *               debugging
- * version 0.9.2, May 31, 2025
+ * version 0.9.3, June 1, 2025
  *
  * License: zlib License
  *
@@ -71,6 +71,15 @@ typedef struct {
 static HashTable* memtrack_entries = NULL;
 
 
+#ifdef __GNUC__
+	#define LIKELY(x)   __builtin_expect(!!(x), 1)
+	#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+	#define LIKELY(x)   (x)
+	#define UNLIKELY(x) (x)
+#endif
+
+
 
 #if defined (__unix__) || defined (__linux__) || defined (__APPLE__)
 	#include <unistd.h>
@@ -85,7 +94,7 @@ static HashTable* memtrack_entries = NULL;
 	static once_flag mtx_init_once = ONCE_FLAG_INIT;
 
 	static void init_mtx (void) {
-		if (mtx_init(&memtrack_lock_mutex, mtx_plain) != thrd_success) {
+		if (UNLIKELY(mtx_init(&memtrack_lock_mutex, mtx_plain) != thrd_success)) {
 			fprintf(stderr, "Failed to initialize the mutex!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
 			exit(EXIT_FAILURE);
 		}
@@ -110,7 +119,7 @@ static HashTable* memtrack_entries = NULL;
 	static bool is_windows_vista_or_later (void) {
 		OSVERSIONINFO osvi = {0};
 		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);  /* 必要な初期化 */
-		if (!GetVersionEx(&osvi)) {
+		if (UNLIKELY(!GetVersionEx(&osvi))) {
 			return false;
 		}
 		return (osvi.dwMajorVersion >= 6);
@@ -160,7 +169,7 @@ void memtrack_lock (void) {
 #elif defined (PTHREAD_AVAILABLE)
 	pthread_mutex_lock(&memtrack_lock_mutex);
 #elif defined (_WIN32)
-	if (winver_checked == false) {
+	if (UNLIKELY(winver_checked == false)) {
 		if (!is_windows_vista_or_later())
 			exit(EXIT_FAILURE);
 		else
@@ -204,9 +213,9 @@ static void quit (void);
 static void init (void) {
 	for (size_t i = 0; i < MEMTRACK_ENTRIES_TRIAL; i++) {
 		memtrack_entries = ht_create(MEMTRACK_ENTRIES_COUNT);
-		if (memtrack_entries != NULL) break;
+		if (LIKELY(memtrack_entries != NULL)) break;
 	}
-	if (memtrack_entries == NULL) {
+	if (UNLIKELY(memtrack_entries == NULL)) {
 		fprintf(stderr, "Failed to initialize memory tracking.\nFile: %s   Line: %u\n", __FILE__, __LINE__);
 		memtrack_unlock();
 		exit(EXIT_FAILURE);
@@ -222,7 +231,7 @@ void memtrack_entry_add (void* ptr, size_t size, const char* file, unsigned int 
 		return;
 	}
 
-	if (memtrack_entries == NULL) init();
+	if (UNLIKELY(memtrack_entries == NULL)) init();
 
 	MemTrackEntry entry = {
 		.ptr = ptr,
@@ -239,7 +248,7 @@ void memtrack_entry_add (void* ptr, size_t size, const char* file, unsigned int 
 #endif
 	};
 
-	if (!ht_set(memtrack_entries, (key_type)ptr, &entry, sizeof(MemTrackEntry)))
+	if (UNLIKELY(!ht_set(memtrack_entries, (key_type)ptr, &entry, sizeof(MemTrackEntry))))
 		fprintf(stderr, "Failed to add entry to memory tracking.\nFile: %s   Line: %u\n", file, line);
 }
 
@@ -252,7 +261,7 @@ void memtrack_entry_update (void* old_ptr, void* new_ptr, size_t new_size, const
 
 	if (new_ptr == NULL) new_ptr = old_ptr;
 
-	if (memtrack_entries == NULL) {
+	if (UNLIKELY(memtrack_entries == NULL)) {
 		init();
 		fprintf(stderr, "No entry found to update! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		memtrack_entry_add(new_ptr, new_size, file, line);
@@ -260,7 +269,7 @@ void memtrack_entry_update (void* old_ptr, void* new_ptr, size_t new_size, const
 	}
 
 	MemTrackEntry* entry = ht_get(memtrack_entries, (key_type)old_ptr);
-	if (entry == NULL) {
+	if (UNLIKELY(entry == NULL)) {
 		fprintf(stderr, "No entry found to update! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		memtrack_entry_add(new_ptr, new_size, file, line);
 		return;
@@ -278,7 +287,7 @@ void memtrack_entry_update (void* old_ptr, void* new_ptr, size_t new_size, const
 void memtrack_entry_free (void* ptr, const char* file, unsigned int line) {
 	if (ptr == NULL) return;
 
-	if (memtrack_entries == NULL) {
+	if (UNLIKELY(memtrack_entries == NULL)) {
 		init();
 		fprintf(stderr, "No entry found to free! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		return;
@@ -307,7 +316,7 @@ void* memtrack_malloc_without_lock (size_t size, const char* file, unsigned int 
 	}
 
 	void* ptr = malloc(size);
-	if (ptr == NULL)
+	if (UNLIKELY(ptr == NULL))
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %u\n", file, line);
 	else
 		memtrack_entry_add(ptr, size, file, line);
@@ -336,7 +345,7 @@ void* memtrack_calloc_without_lock (size_t count, size_t size, const char* file,
 	}
 
 	void* ptr = calloc(count, size);
-	if (ptr == NULL)
+	if (UNLIKELY(ptr == NULL))
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %u\n", file, line);
 	else
 		memtrack_entry_add(ptr, size * count, file, line);
@@ -362,7 +371,7 @@ void* memtrack_realloc_without_lock (void* ptr, size_t size, const char* file, u
 	}
 
 	void* new_ptr = realloc(ptr, size);
-	if (new_ptr == NULL)
+	if (UNLIKELY(new_ptr == NULL))
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %u\n", file, line);
 	else
 		memtrack_entry_update(ptr, new_ptr, size, file, line);
@@ -382,7 +391,7 @@ void memtrack_free_without_lock (void* ptr, const char* file, unsigned int line)
 	if (ptr == NULL) return;
 
 #ifdef DEBUG
-	if (memtrack_entries == NULL) {
+	if (UNLIKELY(memtrack_entries == NULL)) {
 		init();
 		fprintf(stderr, "No entry found to free! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		free(ptr);
@@ -423,7 +432,7 @@ void* memtrack_recalloc_without_lock (void* ptr, size_t count, size_t size, cons
 
 	size_t old_size = 0;
 
-	if (memtrack_entries == NULL) {
+	if (UNLIKELY(memtrack_entries == NULL)) {
 		init();
 		fprintf(stderr, "No entry found to recalloc! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 
@@ -513,7 +522,7 @@ size_t memtrack_get_size_without_lock (void* ptr, const char* file, unsigned int
 		return 0;
 	}
 
-	if (memtrack_entries == NULL) {
+	if (UNLIKELY(memtrack_entries == NULL)) {
 		init();
 		fprintf(stderr, "No entry found to get size! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		return 0;
@@ -542,17 +551,17 @@ void memtrack_all_check (void) {
 	MemTrackEntry** memtrack_entries_arr;
 	for (size_t i = 0; i < MEMTRACK_ENTRIES_TRIAL; i++) {
 		memtrack_entries_arr = (MemTrackEntry**)ht_all_get(memtrack_entries, &memtrack_entries_arr_cnt);
-		if (memtrack_entries_arr != NULL) break;
+		if (LIKELY(memtrack_entries_arr != NULL)) break;
 	}
-	if (memtrack_entries_arr == NULL) {
+	if (UNLIKELY(memtrack_entries_arr == NULL)) {
 		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %u\n", __FILE__, __LINE__);
 
 	} else {
 		printf("\n");
 		for (size_t i = 0; i < memtrack_entries_arr_cnt; i++) {
-			if (memtrack_entries_arr[i] == NULL) {
+			if (UNLIKELY(memtrack_entries_arr[i] == NULL)) {
 				fprintf(stderr, "Entry is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
-			} else if (memtrack_entries_arr[i]->ptr == NULL) {
+			} else if (UNLIKELY(memtrack_entries_arr[i]->ptr == NULL)) {
 				fprintf(stderr, "Entry pointer is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
 			} else {
 #ifndef DEBUG
@@ -583,22 +592,22 @@ static void quit (void) {
 	MemTrackEntry** memtrack_entries_arr;
 	for (size_t i = 0; i < MEMTRACK_ENTRIES_TRIAL; i++) {
 		memtrack_entries_arr = (MemTrackEntry**)ht_all_get(memtrack_entries, &memtrack_entries_arr_cnt);
-		if (memtrack_entries_arr != NULL) break;
+		if (LIKELY(memtrack_entries_arr != NULL)) break;
 	}
-	if (memtrack_entries_arr == NULL) {
+	if (UNLIKELY(memtrack_entries_arr == NULL)) {
 		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %u\n", __FILE__, __LINE__);
 
 	} else {
 		for (size_t i = 0; i < memtrack_entries_arr_cnt; i++) {
-			if (memtrack_entries_arr[i] == NULL) {
+			if (UNLIKELY(memtrack_entries_arr[i] == NULL)) {
 				fprintf(stderr, "Entry is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
-			} else if (memtrack_entries_arr[i]->ptr == NULL) {
+			} else if (UNLIKELY(memtrack_entries_arr[i]->ptr == NULL)) {
 				fprintf(stderr, "Entry pointer is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
 			} else {
 #ifndef DEBUG
 				memtrack_free_without_lock(memtrack_entries_arr[i]->ptr, __FILE__, __LINE__);
 #else
-				if (!memtrack_entries_arr[i]->is_freed) {
+				if (UNLIKELY(!memtrack_entries_arr[i]->is_freed)) {
 					fprintf(stderr, "\nMemory not freed!\nPointer: %p   Size: %zu\nalloc File: %s   Line: %u\nLast realloc File: %s   Line: %u\n", memtrack_entries_arr[i]->ptr, memtrack_entries_arr[i]->size, memtrack_entries_arr[i]->alloc_file, memtrack_entries_arr[i]->alloc_line, memtrack_entries_arr[i]->last_realloc_file, memtrack_entries_arr[i]->last_realloc_line);
 					memtrack_free_without_lock(memtrack_entries_arr[i]->ptr, __FILE__, __LINE__);
 				}
