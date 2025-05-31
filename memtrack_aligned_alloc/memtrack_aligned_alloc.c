@@ -1,7 +1,7 @@
 /*
  * memtrack_aligned_alloc.c -- implementation part of the library that adds
  *                             aligned_alloc to the management target of memtrack.h
- * version 0.9.1, May 29, 2025
+ * version 0.9.2, May 31, 2025
  *
  * License: zlib License
  *
@@ -35,6 +35,11 @@
 
 #undef free
 #undef aligned_alloc
+
+
+#if !defined (__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+	#error "This program requires C11 or higher."
+#endif
 
 
 static void* memtrack_aligned_alloc_without_entry_add (size_t alignment, size_t size, const char* file, unsigned int line) {

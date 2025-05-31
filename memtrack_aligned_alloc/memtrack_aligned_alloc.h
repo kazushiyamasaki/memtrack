@@ -1,7 +1,7 @@
 /*
  * memtrack_aligned_alloc.h -- interface of the library that adds aligned_alloc to the
  *                             management target of memtrack.h
- * version 0.9.1, May 29, 2025
+ * version 0.9.2, May 31, 2025
  *
  * License: zlib License
  *
