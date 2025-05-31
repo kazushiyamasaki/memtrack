@@ -1,7 +1,7 @@
 /*
  * memtrack.c -- implementation part of a library to assist with memory-related
  *               debugging
- * version 0.9.1, May 29, 2025
+ * version 0.9.2, May 31, 2025
  *
  * License: zlib License
  *
@@ -178,7 +178,7 @@ void memtrack_entry_add (void* ptr, size_t size, const char* file, unsigned int 
 #endif
 	};
 
-	if (!ht_set(memtrack_entries, (uintptr_t)ptr, &entry, sizeof(MemTrackEntry)))
+	if (!ht_set(memtrack_entries, (key_type)ptr, &entry, sizeof(MemTrackEntry)))
 		fprintf(stderr, "Failed to add entry to memory tracking.\nFile: %s   Line: %u\n", file, line);
 }
 
@@ -198,7 +198,7 @@ void memtrack_entry_update (void* old_ptr, void* new_ptr, size_t new_size, const
 		return;
 	}
 
-	MemTrackEntry* entry = ht_get(memtrack_entries, (uintptr_t)old_ptr);
+	MemTrackEntry* entry = ht_get(memtrack_entries, (key_type)old_ptr);
 	if (entry == NULL) {
 		fprintf(stderr, "No entry found to update! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		memtrack_entry_add(new_ptr, new_size, file, line);
@@ -223,14 +223,14 @@ void memtrack_entry_free (void* ptr, const char* file, unsigned int line) {
 		return;
 	}
 
-	MemTrackEntry* entry = ht_get(memtrack_entries, (uintptr_t)ptr);
+	MemTrackEntry* entry = ht_get(memtrack_entries, (key_type)ptr);
 	if (entry == NULL) {
 		fprintf(stderr, "No entry found to free! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		return;
 	}
 
 #ifndef DEBUG
-	ht_delete(memtrack_entries, (uintptr_t)ptr);
+	ht_delete(memtrack_entries, (key_type)ptr);
 #else
 	entry->is_freed = true;
 	entry->free_file = file;
@@ -328,7 +328,7 @@ void memtrack_free_without_lock (void* ptr, const char* file, unsigned int line)
 		return;
 	}
 
-	MemTrackEntry* entry = ht_get(memtrack_entries, (uintptr_t)ptr);
+	MemTrackEntry* entry = ht_get(memtrack_entries, (key_type)ptr);
 	if (entry == NULL) {
 		fprintf(stderr, "No entry found to free! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		free(ptr);
@@ -458,7 +458,7 @@ size_t memtrack_get_size_without_lock (void* ptr, const char* file, unsigned int
 		return 0;
 	}
 
-	MemTrackEntry* entry = ht_get(memtrack_entries, (uintptr_t)ptr);
+	MemTrackEntry* entry = ht_get(memtrack_entries, (key_type)ptr);
 	if (entry == NULL) {
 		fprintf(stderr, "No entry found to get size! The memory might not be tracked.\nFile: %s   Line: %u\n", file, line);
 		return 0;
