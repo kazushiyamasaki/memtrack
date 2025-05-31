@@ -39,6 +39,11 @@
 #undef free
 
 
+#if !defined (__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+	#error "This program requires C99 or higher."
+#endif
+
+
 #define MEMTRACK_ENTRIES_COUNT 64
 #define MEMTRACK_ENTRIES_TRIAL 4
 
@@ -67,7 +72,7 @@ static HashTable* memtrack_entries = NULL;
 #endif
 
 
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_THREADS__)
+#if defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined (__STDC_NO_THREADS__)
 	#define C11_THREADS_AVAILABLE
 
 	#include <threads.h>
@@ -98,7 +103,7 @@ static HashTable* memtrack_entries = NULL;
 		InitializeCriticalSection(&memtrack_lock_cs);
 		return true;
 	}
-#elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)
+#elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) && !defined (__STDC_NO_ATOMICS__)
 	#define STDSTOMIC_AVAILABLE
 
 	#include <stdatomic.h>
@@ -106,11 +111,11 @@ static HashTable* memtrack_entries = NULL;
 #elif defined (__GNUC__)
 	static volatile int memtrack_lock_int = 0;
 #else
-	static volatile bool memtrack_busy = false;
+	#error "No valid locking mechanism found on this platform."
 #endif
 
 
-#if !defined (C11_THREADS_AVAILABLE) && !defined(PTHREAD_AVAILABLE) && !defined (_WIN32)
+#if !defined (C11_THREADS_AVAILABLE) && !defined (PTHREAD_AVAILABLE) && !defined (_WIN32)
 	#if (defined (__x86_64__) || defined (__amd64__) || defined (_M_X64) || defined (__i386__) || defined (_M_IX86))
 		#include <emmintrin.h>
 		#define SPIN_WAIT() _mm_pause()
@@ -142,11 +147,6 @@ void memtrack_lock (void) {
 	while (__sync_lock_test_and_set(&memtrack_lock_int, 1)) {
 		SPIN_WAIT();
 	}
-#else
-	while (memtrack_busy) {
-		SPIN_WAIT();
-	}
-	memtrack_busy = true;
 #endif
 }
 
@@ -162,8 +162,6 @@ void memtrack_unlock (void) {
 	atomic_flag_clear_explicit(&memtrack_lock_flag, memory_order_release);
 #elif defined (__GNUC__)
     __sync_lock_release(&memtrack_lock_int);
-#else
-    memtrack_busy = false;
 #endif
 }
 
