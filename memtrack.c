@@ -385,9 +385,6 @@ void* memtrack_calloc (size_t count, size_t size, const char* file, unsigned int
 }
 
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wuse-after-free"  /* memtrack自体のデバッグを行う際は必ず外すこと */
-
 void* memtrack_realloc_without_lock (void* ptr, size_t size, const char* file, unsigned int line) {
 	if (size == 0) {
 		fprintf(stderr, "Undefined behavior, do not use anymore. The memory block will be freed and NULL will be returned.\nFile: %s   Line: %u\n", file, line);
@@ -396,10 +393,17 @@ void* memtrack_realloc_without_lock (void* ptr, size_t size, const char* file, u
 	}
 
 	void* new_ptr = realloc(ptr, size);
-	if (UNLIKELY(new_ptr == NULL))
+	if (UNLIKELY(new_ptr == NULL)) {
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %u\n", file, line);
-	else
+
+	} else {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"  /* memtrack自体のデバッグを行う際は必ず外すこと */
+
 		memtrack_entry_update(ptr, new_ptr, size, file, line);
+
+#pragma GCC diagnostic pop
+	}
 	return new_ptr;
 }
 
@@ -437,10 +441,14 @@ void memtrack_free_without_lock (void* ptr, const char* file, unsigned int line)
 #endif
 
 	free(ptr);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"  /* memtrack自体のデバッグを行う際は必ず外すこと */
+
 	memtrack_entry_free(ptr, file, line);
-}
 
 #pragma GCC diagnostic pop
+}
 
 
 void memtrack_free (void* ptr, const char* file, unsigned int line) {
