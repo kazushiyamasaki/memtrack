@@ -1,6 +1,6 @@
 /*
  * memtrack.h -- interface of a library to assist with memory-related debugging
- * version 0.9.0, June 5, 2025
+ * version 0.9.1, June 7, 2025
  *
  * License: zlib License
  *

@@ -1,7 +1,7 @@
 /*
  * memtrack.c -- implementation part of a library to assist with memory-related
  *               debugging
- * version 0.9.0, June 5, 2025
+ * version 0.9.1, June 7, 2025
  *
  * License: zlib License
  *
@@ -215,7 +215,7 @@ void memtrack_unlock (void) {
 #elif defined (GCC_ATOMIC_BUILTIN_AVAILABLE)
 	__atomic_store_n(&memtrack_lock_int, 0, __ATOMIC_SEQ_CST);
 #elif defined (GCC_SYNC_BUILTIN_AVAILABLE)
-    __sync_lock_release(&memtrack_lock_int);
+	__sync_lock_release(&memtrack_lock_int);
 #endif
 }
 
