@@ -169,7 +169,7 @@ static HashTable* memtrack_entries = NULL;
 #endif
 
 
-static void memtrack_lock (void) {
+void memtrack_lock (void) {
 #ifdef C11_THREADS_AVAILABLE
 	call_once(&mtx_init_once, init_mtx);
 
@@ -203,7 +203,7 @@ static void memtrack_lock (void) {
 }
 
 
-static void memtrack_unlock (void) {
+void memtrack_unlock (void) {
 #ifdef C11_THREADS_AVAILABLE
 	mtx_unlock(&memtrack_lock_mutex);
 #elif defined (PTHREAD_AVAILABLE)
