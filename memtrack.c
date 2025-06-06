@@ -98,7 +98,7 @@ static HashTable* memtrack_entries = NULL;
 
 	static void init_mtx (void) {
 		if (UNLIKELY(mtx_init(&memtrack_lock_mutex, mtx_plain) != thrd_success)) {
-			fprintf(stderr, "Failed to initialize the mutex!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+			fprintf(stderr, "Failed to initialize the mutex!\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -219,7 +219,7 @@ static void init (void) {
 		if (LIKELY(memtrack_entries != NULL)) break;
 	}
 	if (UNLIKELY(memtrack_entries == NULL)) {
-		fprintf(stderr, "Failed to initialize memory tracking.\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+		fprintf(stderr, "Failed to initialize memory tracking.\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 		memtrack_unlock();
 		exit(EXIT_FAILURE);
 	}
@@ -586,15 +586,15 @@ void memtrack_all_check (void) {
 		if (LIKELY(memtrack_entries_arr != NULL)) break;
 	}
 	if (UNLIKELY(memtrack_entries_arr == NULL)) {
-		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 
 	} else {
 		printf("\n");
 		for (size_t i = 0; i < memtrack_entries_arr_cnt; i++) {
 			if (UNLIKELY(memtrack_entries_arr[i] == NULL)) {
-				fprintf(stderr, "Entry is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+				fprintf(stderr, "Entry is NULL!\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 			} else if (UNLIKELY(memtrack_entries_arr[i]->ptr == NULL)) {
-				fprintf(stderr, "Entry pointer is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+				fprintf(stderr, "Entry pointer is NULL!\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 			} else {
 #ifndef DEBUG
 				printf("\nAlready Freed: false\nPointer: %p   Size: %zu\nPlease use debug mode if you need more detailed information.\n", memtrack_entries_arr[i]->ptr, memtrack_entries_arr[i]->size);
@@ -627,14 +627,14 @@ static void quit (void) {
 		if (LIKELY(memtrack_entries_arr != NULL)) break;
 	}
 	if (UNLIKELY(memtrack_entries_arr == NULL)) {
-		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 
 	} else {
 		for (size_t i = 0; i < memtrack_entries_arr_cnt; i++) {
 			if (UNLIKELY(memtrack_entries_arr[i] == NULL)) {
-				fprintf(stderr, "Entry is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+				fprintf(stderr, "Entry is NULL!\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 			} else if (UNLIKELY(memtrack_entries_arr[i]->ptr == NULL)) {
-				fprintf(stderr, "Entry pointer is NULL!\nFile: %s   Line: %u\n", __FILE__, __LINE__);
+				fprintf(stderr, "Entry pointer is NULL!\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 			} else {
 #ifndef DEBUG
 				memtrack_free_without_lock(memtrack_entries_arr[i]->ptr, __FILE__, __LINE__);
