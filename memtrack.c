@@ -132,19 +132,24 @@ static HashTable* memtrack_entries = NULL;
 
 	#include <stdatomic.h>
 	static atomic_flag memtrack_lock_flag = ATOMIC_FLAG_INIT;
-#elif defined (__GNUC__)
-	#if defined (__has_builtin)
-		#if __has_builtin (__sync_lock_test_and_set)
+#elif defined (__GNUC__)  /* GCC または Clang */
+	#ifdef __has_builtin  /* Clang 3以降 */
+		#if __has_builtin (__atomic_exchange_n)
+			#define GCC_ATOMIC_BUILTIN_AVAILABLE
+		#elif __has_builtin (__sync_lock_test_and_set)
 			#define GCC_SYNC_BUILTIN_AVAILABLE
-
-			static volatile int memtrack_lock_int = 0;
-		#else
-			#error "No valid locking mechanism found on this platform."
 		#endif
+	#elif defined (__GNUC_MINOR__)  /* GCC or old Clang */
+		#if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7))
+			#define GCC_ATOMIC_BUILTIN_AVAILABLE
+		#elif !defined (__clang__) && (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)
+			#define GCC_SYNC_BUILTIN_AVAILABLE
+		#endif
+	#endif
+	#if defined (GCC_ATOMIC_BUILTIN_AVAILABLE) || defined (GCC_SYNC_BUILTIN_AVAILABLE)
+		static int memtrack_lock_int = 0;
 	#else
-		#define GCC_SYNC_BUILTIN_AVAILABLE
-
-		static volatile int memtrack_lock_int = 0;
+		#error "No valid locking mechanism found on this platform."
 	#endif
 #else
 	#error "No valid locking mechanism found on this platform."
@@ -164,7 +169,7 @@ static HashTable* memtrack_entries = NULL;
 #endif
 
 
-void memtrack_lock (void) {
+static void memtrack_lock (void) {
 #ifdef C11_THREADS_AVAILABLE
 	call_once(&mtx_init_once, init_mtx);
 
@@ -186,6 +191,10 @@ void memtrack_lock (void) {
 	while (atomic_flag_test_and_set_explicit(&memtrack_lock_flag, memory_order_acquire)) {
 		SPIN_WAIT();
 	}
+#elif defined (GCC_ATOMIC_BUILTIN_AVAILABLE)
+	while (__atomic_exchange_n(&memtrack_lock_int, 1, __ATOMIC_SEQ_CST)) {
+		SPIN_WAIT();
+	}
 #elif defined (GCC_SYNC_BUILTIN_AVAILABLE)
 	while (__sync_lock_test_and_set(&memtrack_lock_int, 1)) {
 		SPIN_WAIT();
@@ -194,7 +203,7 @@ void memtrack_lock (void) {
 }
 
 
-void memtrack_unlock (void) {
+static void memtrack_unlock (void) {
 #ifdef C11_THREADS_AVAILABLE
 	mtx_unlock(&memtrack_lock_mutex);
 #elif defined (PTHREAD_AVAILABLE)
@@ -203,6 +212,8 @@ void memtrack_unlock (void) {
 	LeaveCriticalSection(&memtrack_lock_cs);
 #elif defined (STDSTOMIC_AVAILABLE)
 	atomic_flag_clear_explicit(&memtrack_lock_flag, memory_order_release);
+#elif defined (GCC_ATOMIC_BUILTIN_AVAILABLE)
+	__atomic_store_n(&memtrack_lock_int, 0, __ATOMIC_SEQ_CST);
 #elif defined (GCC_SYNC_BUILTIN_AVAILABLE)
     __sync_lock_release(&memtrack_lock_int);
 #endif
