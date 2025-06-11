@@ -1,0 +1,9 @@
+[submodule "libs"]
+	path = libs
+	url = https://github.com/kazushiyamasaki/global_lock.h
+[submodule "mhashtable"]
+	path = mhashtable
+	url = https://github.com/kazushiyamasaki/mhashtable
+[submodule "memtrack_alloc_nd_array/libs"]
+	path = memtrack_alloc_nd_array/libs
+	url = https://github.com/kazushiyamasaki/alloc_nd_array
