@@ -67,7 +67,7 @@ static void* calloc_wrapper (size_t size) {
 
 void* memtrack_alloc_nd_array_without_lock (const size_t sizes[], size_t dims, size_t elem_size, const char* file, int line) {
 	size_t size_ptrs, size_padding, total_elements;
-	if (calculate_nd_array_size(sizes, dims, elem_size, &size_ptrs, &size_padding, &total_elements)) {
+	if (!calculate_nd_array_size(sizes, dims, elem_size, &size_ptrs, &size_padding, &total_elements)) {
 		fprintf(stderr, "Invalid parameters for nd-array allocation.\nFile: %s   Line: %d\n", file, line);
 		return NULL;
 	}
@@ -93,7 +93,7 @@ void* memtrack_alloc_nd_array (const size_t sizes[], size_t dims, size_t elem_si
 
 void* memtrack_calloc_nd_array_without_lock (const size_t sizes[], size_t dims, size_t elem_size, const char* file, int line) {
 	size_t size_ptrs, size_padding, total_elements;
-	if (calculate_nd_array_size(sizes, dims, elem_size, &size_ptrs, &size_padding, &total_elements)) {
+	if (!calculate_nd_array_size(sizes, dims, elem_size, &size_ptrs, &size_padding, &total_elements)) {
 		fprintf(stderr, "Invalid parameters for nd-array allocation.\nFile: %s   Line: %d\n", file, line);
 		return NULL;
 	}
