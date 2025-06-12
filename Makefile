@@ -228,7 +228,7 @@ CFLAGS				+= -DDEBUG
 else
 # LIB_MODE に応じて CFLAGS で MEMTRACK_DISABLE マクロを定義し、不要な依存関係を整理する
 ifeq ($(LIB_MODE),notrack)
-CFLAGS				= -I. -I./libs -DMEMTRACK_DISABLE
+CFLAGS				= -I. -I./libs -I./mhashtable -DMEMTRACK_DISABLE
 LDLIBS				=
 endif
 endif
