@@ -32,9 +32,6 @@
 #endif
 
 
-#ifndef MEMTRACK_DISABLE
-
-
 #include "memtrack_alloc_nd_array.h"
 
 #include <stdio.h>
@@ -120,6 +117,3 @@ void* memtrack_calloc_nd_array (const size_t sizes[], size_t dims, size_t elem_s
 void memtrack_free_nd_array (void* array, const char* file, int line) {
 	memtrack_free(array, file, line);
 }
-
-
-#endif

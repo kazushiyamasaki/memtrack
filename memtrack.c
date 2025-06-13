@@ -89,6 +89,7 @@ static void init (void) {
 	if (UNLIKELY(memtrack_entries == NULL)) {
 		fprintf(stderr, "Failed to initialize memory tracking.\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 		memtrack_unlock();
+		global_lock_quit();
 		exit(EXIT_FAILURE);
 	}
 
@@ -147,7 +148,6 @@ void memtrack_entry_update (void* old_ptr, void* new_ptr, size_t new_size, const
 	}
 
 	if (old_ptr == new_ptr) {  /* 同じエントリを使える場合は処理を分けることで無駄な処理を減らす */
-		old_entry->ptr = new_ptr;
 		old_entry->size = new_size;
 #ifdef DEBUG
 		old_entry->last_realloc_file = file;
@@ -456,11 +456,7 @@ size_t memtrack_get_size (void* ptr, const char* file, int line) {
 
 void memtrack_all_check (void) {
 	size_t memtrack_entries_arr_cnt;
-	MemTrackEntry** memtrack_entries_arr;
-	for (size_t i = 0; i < MEMTRACK_ENTRIES_TRIAL; i++) {
-		memtrack_entries_arr = (MemTrackEntry**)ht_all_get(memtrack_entries, &memtrack_entries_arr_cnt);
-		if (LIKELY(memtrack_entries_arr != NULL)) break;
-	}
+	MemTrackEntry** memtrack_entries_arr = (MemTrackEntry**)ht_all_get(memtrack_entries, &memtrack_entries_arr_cnt);
 	if (UNLIKELY(memtrack_entries_arr == NULL)) {
 		fprintf(stderr, "Failed to get all entries from memory tracking.\nFile: %s   Line: %d\n", __FILE__, __LINE__);
 

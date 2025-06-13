@@ -20,10 +20,6 @@ endif
 # MODE: 通常は空か 'release'、デバッグ時は 'debug'
 MODE				?=
 
-# LIB_MODE: MEMTRACK_DISABLE マクロをコンパイル時に定義するかどうか
-# 定義しない場合は空か 'release'、定義する場合は 'notrack'
-LIB_MODE			?=
-
 # 依存ライブラリ
 CFLAGS				= -I. -I./libs -I.. -I../mhashtable
 LDLIBS				= -lmemtrack -lalloc_nd_array \
@@ -159,7 +155,7 @@ ADDITIONAL_FLAGS	+= -Wdeprecated-non-prototype -Wmissing-parameter-name \
 					-Wstrict-flex-arrays=3 -Wfree-labels
 endif
 
-endif  # 94行目からここまで GCC のみ
+endif  # 90行目からここまで GCC のみ
 
 
 SCAN_BUILD			=
@@ -217,14 +213,8 @@ ifeq ($(shell [ $(CLANG_VERSION_MAJOR) -ge 19 ] && echo yes),yes)
 ADDITIONAL_FLAGS	+= -Wformat-signedness
 endif
 
-endif  # 167行目からここまで Clang のみ
+endif  # 163行目からここまで Clang のみ
 
-
-# LIB_MODE に応じて CFLAGS で MEMTRACK_DISABLE マクロを定義する
-ifeq ($(LIB_MODE),notrack)
-CFLAGS				+= -DMEMTRACK_DISABLE
-LDLIBS				=
-endif
 
 # MODE に応じて CFLAGS を設定する
 ifeq ($(MODE),debug)
