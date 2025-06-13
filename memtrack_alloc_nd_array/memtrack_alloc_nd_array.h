@@ -51,10 +51,10 @@ MHT_CPP_C_BEGIN
 
 /*
  * Replaces alloc_nd_array and calloc_nd_array with memory-tracking versions.
- * To disable this behavior, define MEMTRACK_ANDA_DISABLE_REPLACE_STANDARD_FUNC
+ * To disable this behavior, define MEMTRACK_DISABLE_REPLACE_ANDA_FUNC
  * macro before including this file.
  */
-#ifndef MEMTRACK_ANDA_DISABLE_REPLACE_STANDARD_FUNC
+#ifndef MEMTRACK_DISABLE_REPLACE_ANDA_FUNC
 	#define alloc_nd_array(sizes, dims, elem_size) memtrack_alloc_nd_array((sizes), (dims), (elem_size), __FILE__, __LINE__)
 	#define calloc_nd_array(sizes, dims, elem_size) memtrack_calloc_nd_array((sizes), (dims), (elem_size), __FILE__, __LINE__)
 	#define free_nd_array(array) memtrack_free_nd_array((array), __FILE__, __LINE__)
