@@ -1,7 +1,7 @@
 /*
  * memtrack_alloc_nd_array.c -- implementation part of a library that adds
  *                              alloc_nd_array to the management target of memtrack.h
- * version 0.9.1, June 12, 2025
+ * version 0.9.2, June 15, 2025
  *
  * License: zlib License
  *
@@ -35,12 +35,22 @@
 #include "memtrack_alloc_nd_array.h"
 
 #include <stdio.h>
+#include <errno.h>
 
 
 #undef malloc
 #undef calloc
 #undef alloc_nd_array
 #undef calloc_nd_array
+
+
+#if defined (__unix__) || defined (__linux__) || defined (__APPLE__)
+	#include <unistd.h>
+#endif
+
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) || defined(_POSIX_VERSION) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+	#define MAYBE_ERRNO_THREAD_LOCAL
+#endif
 
 
 #ifdef __GNUC__
@@ -66,16 +76,29 @@ void* memtrack_alloc_nd_array_without_lock (const size_t sizes[], size_t dims, s
 	size_t size_ptrs, size_padding, total_elements;
 	if (!calculate_nd_array_size(sizes, dims, elem_size, &size_ptrs, &size_padding, &total_elements)) {
 		fprintf(stderr, "Invalid parameters for nd-array allocation.\nFile: %s   Line: %d\n", file, line);
+		memtrack_errfunc = "memtrack_alloc_nd_array";
 		return NULL;
 	}
 
 	void* ptr = allocate_and_initialize_nd_array(sizes, dims, elem_size, size_ptrs, size_padding, total_elements, malloc);
 	if (UNLIKELY(ptr == NULL)) {
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %d\n", file, line);
+		memtrack_errfunc = "memtrack_alloc_nd_array";
 		return NULL;
 	}
 
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	int tmp_errno = errno;
+#endif
+	errno = 0;
+
 	memtrack_entry_add(ptr, size_ptrs + size_padding + (total_elements * elem_size), file, line);
+
+	if (UNLIKELY(errno != 0)) memtrack_errfunc = "memtrack_alloc_nd_array";
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	else errno = tmp_errno;
+#endif
+
 	return ptr;
 }
 
@@ -92,16 +115,29 @@ void* memtrack_calloc_nd_array_without_lock (const size_t sizes[], size_t dims, 
 	size_t size_ptrs, size_padding, total_elements;
 	if (!calculate_nd_array_size(sizes, dims, elem_size, &size_ptrs, &size_padding, &total_elements)) {
 		fprintf(stderr, "Invalid parameters for nd-array allocation.\nFile: %s   Line: %d\n", file, line);
+		memtrack_errfunc = "memtrack_calloc_nd_array";
 		return NULL;
 	}
 
 	void* ptr = allocate_and_initialize_nd_array(sizes, dims, elem_size, size_ptrs, size_padding, total_elements, calloc_wrapper);
 	if (UNLIKELY(ptr == NULL)) {
 		fprintf(stderr, "Memory allocation failed.\nFile: %s   Line: %d\n", file, line);
+		memtrack_errfunc = "memtrack_calloc_nd_array";
 		return NULL;
 	}
 
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	int tmp_errno = errno;
+#endif
+	errno = 0;
+
 	memtrack_entry_add(ptr, size_ptrs + size_padding + (total_elements * elem_size), file, line);
+
+	if (UNLIKELY(errno != 0)) memtrack_errfunc = "memtrack_calloc_nd_array";
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	else errno = tmp_errno;
+#endif
+
 	return ptr;
 }
 
@@ -115,5 +151,15 @@ void* memtrack_calloc_nd_array (const size_t sizes[], size_t dims, size_t elem_s
 
 
 void memtrack_free_nd_array (void* array, const char* file, int line) {
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	int tmp_errno = errno;
+#endif
+	errno = 0;
+
 	memtrack_free(array, file, line);
+
+	if (UNLIKELY(errno != 0)) memtrack_errfunc = "memtrack_free_nd_array";
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	else errno = tmp_errno;
+#endif
 }

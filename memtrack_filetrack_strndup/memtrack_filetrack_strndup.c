@@ -2,7 +2,7 @@
  * memtrack_filetrack_strndup.c -- implementation part of a library that adds
  *                                 filetrack_strndup to the management target of
  *                                 memtrack.h
- * version 0.9.0, June 13, 2025
+ * version 0.9.2, June 15, 2025
  *
  * License: zlib License
  *
@@ -31,6 +31,7 @@
 #include "memtrack_filetrack_strndup.h"
 
 #include <string.h>
+#include <errno.h>
 
 
 #if !defined (__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
@@ -39,6 +40,15 @@
 
 
 #undef filetrack_strndup
+
+
+#if defined (__unix__) || defined (__linux__) || defined (__APPLE__)
+	#include <unistd.h>
+#endif
+
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) || defined(_POSIX_VERSION) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+	#define MAYBE_ERRNO_THREAD_LOCAL
+#endif
 
 
 #ifdef __GNUC__
@@ -59,11 +69,23 @@ char* memtrack_filetrack_strndup_without_lock (const char* string, size_t max_by
 	char* result = filetrack_strndup(string, max_bytes);
 	if (UNLIKELY(result == NULL)) {
 		fprintf(stderr, "Failed to duplicate string.\nFile: %s   Line: %d\n", file, line);
-		return result;
+		memtrack_errfunc = "memtrack_filetrack_strndup";
+		return NULL;
 	}
 
-	size_t size = strlen(result);
+	size_t size = (strlen(result) + 1);
+
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	int tmp_errno = errno;
+#endif
+	errno = 0;
+
 	memtrack_entry_add(result, size, file, line);
+
+	if (UNLIKELY(errno != 0)) memtrack_errfunc = "memtrack_filetrack_strndup";
+#ifdef MAYBE_ERRNO_THREAD_LOCAL
+	else errno = tmp_errno;
+#endif
 
 	return result;
 }

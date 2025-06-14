@@ -223,8 +223,7 @@ endif  # 168行目からここまで Clang のみ
 
 # LIB_MODE に応じて CFLAGS で MEMTRACK_DISABLE マクロを定義する
 ifeq ($(LIB_MODE),notrack)
-CFLAGS				+= -I. -I./libs -I.. -I../mhashtable -DMEMTRACK_DISABLE
-LDLIBS				=
+CFLAGS				+= -DMEMTRACK_DISABLE
 endif
 
 # MODE に応じて CFLAGS を設定する

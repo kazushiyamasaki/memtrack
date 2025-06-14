@@ -1,7 +1,7 @@
 /*
  * memtrack_alloc_nd_array.h -- interface of a library that adds alloc_nd_array to
  *                              the management target of memtrack.h
- * version 0.9.1, June 12, 2025
+ * version 0.9.2, June 15, 2025
  *
  * License: zlib License
  *
