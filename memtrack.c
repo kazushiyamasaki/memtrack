@@ -206,6 +206,11 @@ void memtrack_entry_update (void* old_ptr, void* new_ptr, size_t new_size, const
 		fprintf(stderr, "Failed to add new entry to memory tracking.\nFile: %s   Line: %d\n", file, line);
 		memtrack_errfunc = "memtrack_entry_update";
 	}
+
+	if (!ht_delete(memtrack_entries, (key_type)old_ptr)) {
+		fprintf(stderr, "Failed to delete old entry from memory tracking.\nFile: %s   Line: %d\n", file, line);
+		memtrack_errfunc = "memtrack_entry_update";
+	}
 }
 
 
@@ -230,8 +235,10 @@ void memtrack_entry_free (void* ptr, const char* file, int line) {
 	}
 
 #ifndef DEBUG
-	if (!ht_delete(memtrack_entries, (key_type)ptr))
+	if (!ht_delete(memtrack_entries, (key_type)ptr)) {
+		fprintf(stderr, "Failed to delete entry from memory tracking.\nFile: %s   Line: %d\n", file, line);
 		memtrack_errfunc = "memtrack_entry_free";
+	}
 #else
 	entry->is_freed = true;
 	entry->free_file = file;
