@@ -1,7 +1,7 @@
 /*
  * memtrack_filetrack_strndup.h -- interface of a library that adds filetrack_strndup to
  *                                 the management target of memtrack.h
- * version 0.9.2, June 15, 2025
+ * version 0.9.3, June 15, 2025
  *
  * License: zlib License
  *

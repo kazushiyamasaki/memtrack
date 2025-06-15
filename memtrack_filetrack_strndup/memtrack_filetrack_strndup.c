@@ -2,7 +2,7 @@
  * memtrack_filetrack_strndup.c -- implementation part of a library that adds
  *                                 filetrack_strndup to the management target of
  *                                 memtrack.h
- * version 0.9.2, June 15, 2025
+ * version 0.9.3, June 15, 2025
  *
  * License: zlib License
  *
@@ -46,7 +46,7 @@
 	#include <unistd.h>
 #endif
 
-#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) || defined(_POSIX_VERSION) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#if (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) || defined (_POSIX_VERSION) || defined (__linux__) || defined (__FreeBSD__) || defined (__NetBSD__) || defined (__OpenBSD__) || defined (__DragonFly__)
 	#define MAYBE_ERRNO_THREAD_LOCAL
 #endif
 

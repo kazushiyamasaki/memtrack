@@ -1,7 +1,7 @@
 /*
  * memtrack.c -- implementation part of a library to assist with memory-related
  *               debugging
- * version 0.9.2, June 15, 2025
+ * version 0.9.3, June 15, 2025
  *
  * License: zlib License
  *
@@ -42,13 +42,17 @@
 	#include <unistd.h>
 #endif
 
-#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) || defined(_POSIX_VERSION) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#if (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) || defined (_POSIX_VERSION) || defined (__linux__) || defined (__FreeBSD__) || defined (__NetBSD__) || defined (__OpenBSD__) || defined (__DragonFly__)
 	#define MAYBE_ERRNO_THREAD_LOCAL
 #endif
 
 
 /* errno 記録時に関数名を記録する */
-const char* memtrack_errfunc = NULL;  /* 非スレッドセーフ */
+#ifdef THREAD_LOCAL
+	THREAD_LOCAL const char* memtrack_errfunc = NULL;
+#else
+	const char* memtrack_errfunc = NULL;  /* 非スレッドセーフ */
+#endif
 
 
 #ifndef MEMTRACK_DISABLE
